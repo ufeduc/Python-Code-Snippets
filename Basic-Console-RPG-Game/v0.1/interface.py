@@ -146,7 +146,7 @@ class Interface(Database):
         print("===============")
         # print(character_info)
 
-    def create_account(self, username, password): # this should be handled when character class created
+    def create_account(self, username, password): # this should be handle when the character class created
         Interface().create_accounts(username, password)
         job = input("Warrior(1) Assassin(2) Mage(3): ")
         if job in ['warrior', '1', 'assassin', '2', 'mage', '3']:
