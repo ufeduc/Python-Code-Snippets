@@ -7,7 +7,7 @@ class Database:
         import pymysql.cursors
         connection = pymysql.connect(host='localhost',
                                      user='root',
-                                     password='mysqlMYSQL321',
+                                     password='password',
                                      cursorclass=pymysql.cursors.DictCursor)
         cursor = connection.cursor()
         return cursor, connection
