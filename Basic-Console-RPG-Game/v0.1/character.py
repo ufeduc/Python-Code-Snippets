@@ -17,8 +17,7 @@ class Character:
         elif get_close_matches(self.job, self.mage):
             return Mage(self.balance, self.experience, self.level).properties()
         else:
-            import sys # bug
-            sys.exit() # bug
+            print("Wrong Input")
 
 class Warrior(Character):
     def __init__(self, balance, experience, level):

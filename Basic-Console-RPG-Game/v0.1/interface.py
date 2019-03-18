@@ -7,7 +7,7 @@ class Database:
         import pymysql.cursors
         connection = pymysql.connect(host='localhost',
                                      user='root',
-                                     password='password',
+                                     password='mysqlMYSQL321',
                                      cursorclass=pymysql.cursors.DictCursor)
         cursor = connection.cursor()
         return cursor, connection
@@ -90,11 +90,11 @@ class Database:
         except Exception as e:
             return f"Exception is: {e}"
 
-    def display_character(self, username, password):
+    def character_properties(self, username, password):
         cursor, connection = self.connection_to_database
         cursor.execute("USE users")
         try:
-            cursor.execute('''SELECT username, health, mana, attack, balance, experience, level, job FROM accounts INNER JOIN characters ON accounts.id = characters.account_id WHERE username = %s''', (username))
+            cursor.execute('''SELECT health, mana, attack, balance, experience, level, job FROM accounts INNER JOIN characters ON accounts.id = characters.account_id WHERE username = %s''', (username))
             self.data = cursor.fetchone()
 
         except Exception as e:
@@ -104,7 +104,35 @@ class Database:
             cursor.close()
             connection.close()
             return self.data
-
+    
+    def check_database(self):
+        cursor, connection = self.connection_to_database
+        cursor.execute("SHOW DATABASES")
+        db_list = cursor.fetchall()
+        connection.commit()
+        cursor.close()
+        connection.close()
+        database_list = [db['Database'] for db in db_list if db['Database'] == 'users']
+        return database_list
+    
+    def arena_update(self, username, health, mana, balance, experience, level):
+        cursor, connection = self.connection_to_database
+        try: # this also should be handle
+            print("try")
+            cursor.execute("SELECT * FROM accounts")
+            print("try1")
+            result = cursor.fetchone()
+            print(result)
+            print("tryend")
+            
+            # cursor.execute('''UPDATE characters SET health=%s, mana=%s, balance=%s, experience=%s, level=%s WHERE account_id=%s''', (rhealth, rmana, rbalance, rexperience, rlevel, account_id))
+        except Exception as e:
+            return f"Error Has Occured: {e}"
+        finally:
+            connection.commit()
+            cursor.close()
+            connection.close()
+            
 
 class Interface(Database):
 
@@ -117,20 +145,13 @@ class Interface(Database):
 
     def interraction_with_user(self):
         from difflib import get_close_matches
-        cursor, connection = Interface().connection_to_database
-        cursor.execute("show databases")
-        db_list = cursor.fetchall()
-        connection.commit()
-        cursor.close()
-        connection.close()
-        database_list = [db['Database'] for db in db_list if db['Database'] == 'users']
-        if 'users' in database_list:
+        database_list = Interface().check_database()
+        if database_list:
             Interface().greetings()
             user_input = input("Log In(1) or Create New Account(2): ")
             username = input('username: ')
             password = input('password: ')
             if get_close_matches(user_input.lower(), self.log):
-                # print("1 log in")
                 if Interface().log_check(username, password):
                     Interface().log_in(username, password)
                 else:
@@ -151,26 +172,42 @@ class Interface(Database):
 
 
     def log_in(self, username, password):
-        character_info = Interface().display_character(username, password)
-        print("===============")
-        for k,v in character_info.items():
-            print(f"{k}: {v}")
-        print("===============")
-        # print(character_info)
+        character_info = Interface().character_properties(username, password)
+        health     = character_info['health']
+        mana       = character_info['mana']
+        attack     = character_info['attack']
+        balance    = character_info['balance']
+        experience = character_info['experience']
+        level      = character_info['level']
+        job        = character_info['job']
 
+        move = input("Character Info(1) Arena(2) Shop(3): ")
+        if move == '1':
+            print(f"Health: {health} Mana: {mana} Attack: {attack} Balance: {balance} Experience: {experience} Level: {level} Job: {job}")
+        elif move == '2':
+            Interface().arena(username, health, mana, attack, balance, experience, level)
+        elif move == '3':
+            Interface().shop(balance, level, job)
+        else:
+            Interface().log_in(username, password)
 
+    def arena(self, username, health, mana, attack, balance, experience, level):
+        from arena import Arena
+        rhealth, rmana, rbalance, rexperience, rlevel = Arena(username, health, mana, attack, balance, experience, level).fight()
+        Interface().arena_update(username, rhealth, rmana, rbalance, rexperience, rlevel)
+
+    def shop(self, balance, level, job):
+        from shop import Shop
+        Shop(balance, level, job).interraction_with_shop()
+        cursor, connection = Interface().connection_to_database
+        #this is the where i am tired :)
 
     def create_account(self, username, password):
         from character import Character
-        Interface().create_accounts(username, password)
         job = input("Warrior(1) Assassin(2) Mage(3): ")
         properties = Character(job).interraction_with_character_class()
+        Interface().create_accounts(username, password)
         Interface().create_character(properties[0], properties[1], properties[2], properties[3], properties[4], properties[5], properties[6])
-        c = Interface().display_character(username, password)
-        print("===============")
-        for k,v in c.items():
-            print(f"{k}: {v}")
-        print("===============")
 
 
 # Database().log_check('user1','12345')
